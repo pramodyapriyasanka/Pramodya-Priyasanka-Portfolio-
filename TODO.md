@@ -1,0 +1,1 @@
+- [x] Step 2: Edit src/sections/Contact.jsx with responsive flex/grid improvements (syntax fixed)
