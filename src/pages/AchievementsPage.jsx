@@ -248,7 +248,7 @@ const AchievementsPage = () => {
             </h1>
 
             <p className="hero-name mt-2 text-[#20C997] font-medium tracking-wider text-sm">
-              Profile of Pramodya Priyasanka, BSc Software Engineering.
+              Profile of Pramodya Priyasanka, BSc Honours Data Science.
             </p>
 
             <p className="hero-desc mt-5 text-slate-400 text-base md:text-lg leading-relaxed max-w-2xl">

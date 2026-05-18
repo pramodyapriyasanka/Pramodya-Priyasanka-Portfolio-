@@ -124,7 +124,7 @@ export const Footer = () => {
                 <div>
                   <p className="text-xs text-muted-foreground">Phone</p>
                   <p className="text-sm text-foreground group-hover:text-primary transition-colors">
-                    +94 79 455 367
+                    +94 75 9455 367
                   </p>
                 </div>
               </a>
