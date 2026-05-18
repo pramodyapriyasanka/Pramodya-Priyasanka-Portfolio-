@@ -8,6 +8,8 @@ import AchievementsPage from "@/pages/AchievementsPage";
 import ContactPage from "@/pages/ContactPage";
 import AdminPage from "@/pages/AdminPage";
 
+import { Analytics } from "@vercel/analytics/react";
+
 function App() {
   return (
     <Router basename={import.meta.env.BASE_URL}>
@@ -22,6 +24,8 @@ function App() {
           <Route path="/admin" element={<AdminPage />} />
         </Routes>
         <Footer />
+        
+        <Analytics />
       </div>
     </Router>
   );
