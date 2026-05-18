@@ -59,6 +59,7 @@ export const Contact = () => {
         throw new Error("EmailJS configuration is missing. Please check your environment variables.")
       }
 
+      
       await emailjs.send(
         serviceID,
         templateID,
@@ -208,7 +209,7 @@ export const Contact = () => {
                   <>
                     <span className="animate-spin text-xl">⏳</span>
                     <span>Sending your message...</span>
-                  </>
+                  </                  >
                 ) : (
                   <>
                     <span>Send Message</span>
