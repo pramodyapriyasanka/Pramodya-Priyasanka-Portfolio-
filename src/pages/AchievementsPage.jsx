@@ -7,47 +7,52 @@ const AchievementsPage = () => {
   const [mounted, setMounted] = useState(false)
   const sectionRef = useRef(null)
 
-  useEffect(() => {
-    const loadAchievements = async () => {
-      try {
-        const { data: certData, error: certError } = await supabase
-          .from("certifications")
-          .select("*")
-          .order("created_at", { ascending: false })
+  const loadAchievements = async () => {
+    try {
+      const { data: certData, error: certError } = await supabase
+        .from("certifications")
+        .select("*")
+        .order("created_at", { ascending: false })
 
-        if (certError) {
-          console.error("Failed to load certifications from Supabase:", certError)
-        } else {
-          setCertifications(Array.isArray(certData) ? certData : [])
-        }
-
-        const { data: eduData, error: eduError } = await supabase
-          .from("education")
-          .select("*")
-          .order("created_at", { ascending: false })
-
-        if (eduError) {
-          console.error("Failed to load education from Supabase:", eduError)
-        } else {
-          setEducation(Array.isArray(eduData) ? eduData : [])
-        }
-      } catch (err) {
-        console.error("Error loading achievements:", err)
+      if (certError) {
+        console.error("Failed to load certifications from Supabase:", certError)
+      } else {
+        setCertifications(Array.isArray(certData) ? certData : [])
       }
+
+      const { data: eduData, error: eduError } = await supabase
+        .from("education")
+        .select("*")
+        .order("id", { ascending: false }) 
+
+      if (eduError) {
+        console.error("Failed to load education from Supabase:", eduError)
+      } else {
+        setEducation(Array.isArray(eduData) ? eduData : [])
+      }
+    } catch (err) {
+      console.error("Error loading achievements:", err)
     }
+  }
 
-    loadAchievements()
-
-    const handleDataChange = () => {
+  useEffect(() => {
+    // 💡 Hydration Error (Error 418) 
+    if (typeof window !== "undefined") {
       loadAchievements()
-    }
 
-    window.addEventListener("portfolio-data-changed", handleDataChange)
+      const handleDataChange = () => {
+        loadAchievements()
+      }
 
-    const t = requestAnimationFrame(() => setMounted(true))
-    return () => {
-      window.removeEventListener("portfolio-data-changed", handleDataChange)
-      cancelAnimationFrame(t)
+      window.addEventListener("portfolio-data-changed", handleDataChange)
+
+      // 💡 SSR බිල්ඩ් එකේදී requestAnimationFrame හිරවීම වැළැක්වීමට මෙතනට ගත්තා
+      const t = requestAnimationFrame(() => setMounted(true))
+      
+      return () => {
+        window.removeEventListener("portfolio-data-changed", handleDataChange)
+        cancelAnimationFrame(t)
+      }
     }
   }, [])
 
@@ -100,7 +105,7 @@ const AchievementsPage = () => {
         /* ─── Badge pulse ────────────────────────────────────────── */
         @keyframes badge-pulse {
           0%, 100% { box-shadow: 0 0 0   0px rgba(32,201,151,.35); }
-          50%       { box-shadow: 0 0 0  6px rgba(32,201,151,0);    }
+          50%       { box-shadow: 0 0 0   6px rgba(32,201,151,0);    }
         }
 
         /* ─── Page entrance ──────────────────────────────────────── */
@@ -282,41 +287,50 @@ const AchievementsPage = () => {
               <div className="divider-glow mb-10 h-px w-full bg-gradient-to-r from-transparent via-[#20C997]/30 to-transparent" />
 
               <div className="grid gap-8 lg:grid-cols-2">
-                {education.length > 0 ? education.map((item, i) => (
-                  <article
-                    key={item.id}
-                    className="ach-card group relative overflow-hidden rounded-[28px] border border-white/8 bg-slate-950/75 p-8 shadow-2xl shadow-black/50
-                               transition-all duration-500 ease-out
-                               hover:-translate-y-2 hover:border-[#20C997]/35
-                               hover:shadow-[0_20px_50px_rgba(32,201,151,.08),0_0_0_1px_rgba(32,201,151,.12)]"
-                    style={{ animationDelay: `${.65 + i * .12}s` }}
-                  >
-                    {/* Hover gradient */}
-                    <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-gradient-to-br from-[#20C997]/6 via-transparent to-[#10b981]/4 pointer-events-none rounded-[28px]" />
+                {education.length > 0 ? education.map((item, i) => {
+                  // 💡 Supabase 
+                  const degreeTitle = item.title || item.degree || "Degree Certificate";
+                  const universityName = item.institution || item.university || item.school || "University";
+                  const eduDesc = item.description || "";
+                  const gradYear = item.year || "";
 
-                    {/* Top accent bar */}
-                    <div className="absolute top-0 left-8 right-8 h-px bg-gradient-to-r from-transparent via-[#20C997]/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                  return (
+                    <article
+                      key={item.id}
+                      className="ach-card group relative overflow-hidden rounded-[28px] border border-white/8 bg-slate-950/75 p-8 shadow-2xl shadow-black/50
+                                 transition-all duration-500 ease-out
+                                 hover:-translate-y-2 hover:border-[#20C997]/35
+                                 hover:shadow-[0_20px_50px_rgba(32,201,151,.08),0_0_0_1px_rgba(32,201,151,.12)]"
+                      style={{ animationDelay: `${.65 + i * .12}s` }}
+                    >
+                      {/* Hover gradient */}
+                      <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-gradient-to-br from-[#20C997]/6 via-transparent to-[#10b981]/4 pointer-events-none rounded-[28px]" />
 
-                    <div className="relative z-10 mb-6">
-                      <h3 className="text-xl font-semibold text-white group-hover:text-[#20C997] transition-colors duration-300 leading-snug">
-                        {item.degree}
-                      </h3>
-                      <p className="mt-2 text-sm text-slate-400 tracking-wide">{item.institution}</p>
-                    </div>
+                      {/* Top accent bar */}
+                      <div className="absolute top-0 left-8 right-8 h-px bg-gradient-to-r from-transparent via-[#20C997]/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
 
-                    <p className="relative z-10 text-sm leading-relaxed text-slate-300/90 mb-7">{item.description}</p>
+                      <div className="relative z-10 mb-6">
+                        <h3 className="text-xl font-semibold text-white group-hover:text-[#20C997] transition-colors duration-300 leading-snug">
+                          {degreeTitle}
+                        </h3>
+                        <p className="mt-2 text-sm text-slate-400 tracking-wide">{universityName}</p>
+                      </div>
 
-                    <div className="relative z-10 flex items-center justify-between text-sm text-slate-400 border-t border-white/5 pt-5">
-                      <span
-                        className="ach-badge-pulse font-medium px-3.5 py-1.5 rounded-full
-                                   bg-[#20C997]/10 border border-[#20C997]/20 text-[#20C997] text-xs tracking-wider"
-                      >
-                        {item.year}
-                      </span>
-                      <span className="text-xs text-slate-500 tracking-wide">{item.school}</span>
-                    </div>
-                  </article>
-                )) : (
+                      <p className="relative z-10 text-sm leading-relaxed text-slate-300/90 mb-7">{eduDesc}</p>
+
+                      <div className="relative z-10 flex items-center justify-between text-sm text-slate-400 border-t border-white/5 pt-5">
+                        {gradYear && (
+                          <span
+                            className="ach-badge-pulse font-medium px-3.5 py-1.5 rounded-full
+                                       bg-[#20C997]/10 border border-[#20C997]/20 text-[#20C997] text-xs tracking-wider"
+                          >
+                            {gradYear}
+                          </span>
+                        )}
+                      </div>
+                    </article>
+                  );
+                }) : (
                   <div className="rounded-[28px] border border-white/8 bg-slate-950/70 p-12 text-center text-slate-500 col-span-2">
                     No academic journey details added yet. Please add them from the admin panel.
                   </div>
@@ -384,7 +398,6 @@ const AchievementsPage = () => {
                           className="w-full h-full object-cover opacity-75 transition-all duration-700 ease-out group-hover:opacity-100 group-hover:scale-105"
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-transparent to-transparent" />
-                        {/* Image overlay glow */}
                         <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-gradient-to-br from-[#20C997]/8 to-transparent" />
                       </div>
                     )}
