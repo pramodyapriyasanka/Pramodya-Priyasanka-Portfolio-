@@ -34,12 +34,6 @@ const heroParticles = [
   { left: "47%", top: "40%", size: 2, duration: "18s", delay: "0.3s", opacity: 0.16 },
 ]
 
-const heroTechPills = [
-  { id: "pill-react", label: "React", dotClass: "pill-dot-teal", className: "photo-pill-1" },
-  { id: "pill-python", label: "Python", dotClass: "pill-dot-gold", className: "photo-pill-2" },
-  { id: "pill-ai", label: "AI/ML", dotClass: "pill-dot-blue", className: "photo-pill-3" },
-]
-
 export const Hero = () => {
   const [isNearEnd, setIsNearEnd] = useState(false)
 
@@ -265,7 +259,28 @@ export const Hero = () => {
               whileHover={{ scale: 1.05, rotateY: 5 }}
               className="relative"
             >
-              <div className="profile-border-animated relative w-[260px] h-[260px] md:w-[320px] md:h-[320px] lg:w-[420px] lg:h-[420px] flex items-center justify-center backdrop-blur-xl bg-white/5 rounded-full border border-white/10 shadow-[0_0_60px_rgba(34,211,238,0.15)] hover:shadow-[0_0_80px_rgba(34,211,238,0.25)] transition-all duration-500">
+              {/* Pulse Rings Animation - Inner Ring (Teal) */}
+              <motion.div
+                animate={{ scale: [1, 1.08, 1], opacity: [0.5, 1, 0.5] }}
+                transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
+                className="absolute rounded-full pointer-events-none"
+                style={{
+                  inset: "-10px",
+                  border: "2px dashed rgba(29, 158, 117, 0.7)",
+                }}
+              />
+              {/* Pulse Rings Animation - Outer Ring (Blue) */}
+              <motion.div
+                animate={{ scale: [1, 1.08, 1], opacity: [0.3, 0.8, 0.3] }}
+                transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+                className="absolute rounded-full pointer-events-none"
+                style={{
+                  inset: "-24px",
+                  border: "1px dashed rgba(55, 138, 221, 0.5)",
+                }}
+              />
+
+              <div className="relative w-[260px] h-[260px] md:w-[320px] md:h-[320px] lg:w-[420px] lg:h-[420px] flex items-center justify-center backdrop-blur-xl bg-white/5 rounded-full border border-white/10 shadow-[0_0_60px_rgba(34,211,238,0.15)] hover:shadow-[0_0_80px_rgba(34,211,238,0.25)] transition-all duration-500">
                 
                 <div className="absolute inset-2 rounded-full z-10 glass-strong overflow-hidden transition-transform duration-500 hover:scale-[1.02] backdrop-blur-2xl bg-white/10">
                   <img
@@ -275,39 +290,7 @@ export const Hero = () => {
                   />
                 </div>
 
-                <div className="absolute -top-6 left-0 flex flex-col gap-2 z-20">
-                  <span className="inline-flex items-center gap-2 rounded-full bg-background/90 px-4 py-2 text-xs font-semibold tracking-wide text-white/90 border border-white/10 shadow-glow backdrop-blur-xl">
-                    <span className="h-2.5 w-2.5 rounded-full bg-primary shadow-[0_0_12px_rgba(59,130,246,0.55)]" />
-                    React / Vite
-                  </span>
-                  <span className="inline-flex items-center gap-2 rounded-full bg-background/90 px-4 py-2 text-xs font-semibold tracking-wide text-white/90 border border-white/10 shadow-glow backdrop-blur-xl">
-                    <span className="h-2.5 w-2.5 rounded-full bg-highlight shadow-[0_0_12px_rgba(56,189,248,0.45)]" />
-                    Tailwind UI
-                  </span>
-                </div>
-
                 <div className="absolute top-0 left-0 right-0 bottom-0 rounded-full ring-1 ring-white/10 shadow-[inset_0_0_40px_rgba(255,255,255,0.08)]" />
-                <div className="absolute inset-x-3 -bottom-8 flex justify-center gap-3 z-20">
-                  <span className="inline-flex items-center gap-2 rounded-full bg-background/90 px-3 py-2 text-[11px] uppercase tracking-[0.25em] text-muted-foreground border border-white/10 backdrop-blur-xl shadow-sm">
-                    Pixel-perfect UI
-                  </span>
-                  <span className="inline-flex items-center gap-2 rounded-full bg-background/90 px-3 py-2 text-[11px] uppercase tracking-[0.25em] text-muted-foreground border border-white/10 backdrop-blur-xl shadow-sm">
-                    Motion polish
-                  </span>
-                </div>
-
-                <motion.div 
-                  initial={{ y: 20, opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  transition={{ delay: 1.2, duration: 0.5, type: "spring" }}
-                  className="absolute -bottom-4 left-1/2 -translate-x-1/2 bg-background/80 backdrop-blur-xl border border-white/10 rounded-full px-5 py-2 text-sm font-semibold flex items-center gap-3 whitespace-nowrap z-20 hover:bg-white/10 transition-colors shadow-[0_0_20px_rgba(0,0,0,0.5)] cursor-default"
-                >
-                  <div className="relative flex h-3 w-3">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
-                  </div>
-                  Available Now
-                </motion.div>
               </div>
             </motion.div>
           </motion.div>
