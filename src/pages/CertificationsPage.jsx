@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { loadPortfolioData } from "@/utils/portfolioStorage"
+import { supabase } from "@/supabaseClient"
 
 const defaultCertifications = [
   {
@@ -44,15 +44,23 @@ const CertificationsPage = () => {
   const [education, setEducation] = useState(defaultEducation)
 
   useEffect(() => {
-    const savedCerts = loadPortfolioData("portfolio_certifications", [])
-    const savedEducation = loadPortfolioData("portfolio_educations", [])
+    const loadCertifications = async () => {
+      const { data, error } = await supabase
+        .from("certifications")
+        .select("*")
+        .order("created_at", { ascending: false })
 
-    if (savedCerts.length) {
-      setCertifications((prev) => [...savedCerts, ...prev])
+      if (error) {
+        console.error("Failed to load certifications from Supabase:", error)
+        return
+      }
+
+      if (Array.isArray(data) && data.length > 0) {
+        setCertifications(data)
+      }
     }
-    if (savedEducation.length) {
-      setEducation((prev) => [...savedEducation, ...prev])
-    }
+
+    loadCertifications()
   }, [])
 
   return (
@@ -76,10 +84,10 @@ const CertificationsPage = () => {
               <div className="flex items-center justify-between gap-4 mb-6">
                 <div>
                   <h2 className="text-2xl font-semibold text-white">{cert.title}</h2>
-                  <p className="text-sm text-muted-foreground mt-2">{cert.institution}</p>
+                  <p className="text-sm text-muted-foreground mt-2">{cert.issuer || cert.institution}</p>
                 </div>
                 <span className="rounded-full bg-primary/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.24em] text-primary">
-                  {cert.type}
+                  {cert.type || "Certification"}
                 </span>
               </div>
               <p className="text-sm text-muted-foreground leading-relaxed mb-4">{cert.description}</p>

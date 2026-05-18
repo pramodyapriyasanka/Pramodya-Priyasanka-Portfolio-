@@ -1,7 +1,8 @@
-import { ArrowUpRight, Github } from "lucide-react"
+import { useEffect, useState } from "react"
+import { ArrowUpRight } from "lucide-react"
 import { AnimatedBorderButton } from "@/components/AnimatedBorderButton"
 import { motion } from "framer-motion"
-import { loadPortfolioData } from "@/utils/portfolioStorage"
+import { supabase } from "@/supabaseClient"
 
 const renderProjectDescription = (description) => {
   if (!description) return null
@@ -64,24 +65,46 @@ const renderProjectDescription = (description) => {
   })
 }
 
-const projects = [
-  {
-    id: "smart-baby-cradle",
-    title: "Smart Baby Cradle",
-    description: "This project introduces a smart cradle system that automates baby monitoring using Arduino, NodeMCU, and the Blynk IoT platform. It detects baby movement and sends real-time notifications to parents, ensuring peace of mind and enhanced safety for infants.",
-    image: "/projects/smart_baby_cradle.png",
-    tag: ["Arduino", "NodeMCU", "Blynk IoT"],
-    github: "#",
-  },
-]
-
 export const Projects = () => {
-  const storedProjects = loadPortfolioData("portfolio_projects", [])
-  const safeStoredProjects = Array.isArray(storedProjects) ? storedProjects : []
+  const [projects, setProjects] = useState([])
+  const [isLoading, setIsLoading] = useState(true)
+
+  const fetchProjects = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("projects")
+        .select("*")
+        .order("created_at", { ascending: false })
+
+      console.log("[Projects Test] Current State Data:", data)
+
+      if (error) throw error
+
+      setProjects(data || [])
+    } catch (err) {
+      console.error("[Projects] Fetch exception:", err.message || err)
+      setProjects([])
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchProjects()
+
+    const handleDataChange = () => {
+      fetchProjects()
+    }
+    window.addEventListener('portfolio-data-changed', handleDataChange)
+
+    return () => {
+      window.removeEventListener('portfolio-data-changed', handleDataChange)
+    }
+  }, [])
 
   const containerVariants = {
     hidden: {},
-    visible: { transition: { staggerChildren: 0.2 } }
+    visible: { transition: { staggerChildren: 0.1 } }
   }
 
   const headerVariants = {
@@ -89,23 +112,16 @@ export const Projects = () => {
     visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: "easeOut" } }
   }
 
-  const cardVariants = {
-    hidden: { opacity: 0, y: 50, scale: 0.95 },
-    visible: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.6, ease: "easeOut" } }
-  }
-
   return (
     <section id="projects" className="py-22 relative overflow-hidden">
-      {/* Background glows */}
       <div className="absolute top-1/4 right-0 w-96 h-96 bg-primary/5 rounded-full blur-[100px] pointer-events-none" />
       <div className="absolute bottom-1/4 left-0 w-80 h-80 bg-highlight/5 rounded-full blur-[100px] pointer-events-none" />
 
       <div className="container mx-auto px-6 relative z-10 max-w-6xl">
-        {/* Section header */}
         <motion.div
           initial="hidden"
           whileInView="visible"
-          viewport={{ once: true, amount: 0.2 }}
+          viewport={{ once: true, amount: 0.05 }} 
           variants={containerVariants}
           className="text-center mx-auto max-w-3xl mb-16"
         >
@@ -121,80 +137,120 @@ export const Projects = () => {
           </motion.p>
         </motion.div>
 
-        {/* Projects Grid */}
-        <motion.div
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, amount: 0.1 }}
-          variants={containerVariants}
-          className="grid md:grid-cols-2 gap-8 lg:gap-12"
-        >
-          {[...safeStoredProjects, ...projects].map((project, idx) => {
-            const rawLink = project.github && project.github !== '#' ? project.github : project.institution || null
-            const safeHref = rawLink && rawLink !== '#' ? (rawLink.startsWith('http') ? rawLink : `https://${rawLink}`) : null
-            return (
-            <motion.div
-              key={project.id}
-              variants={cardVariants}
-              whileHover={{ y: -10 }}
-              className="group glass rounded-2xl overflow-hidden hover:shadow-2xl hover:shadow-primary/20 hover:border-primary/40 transition-all duration-300 md:row-span-1 flex flex-col h-full bg-card/40"
-            >
-              {/* Image Container */}
-              <div className="relative overflow-hidden aspect-video border-b border-white/5">
-                <img src={project.image} alt={project.title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
-                <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/20 to-transparent opacity-60 group-hover:opacity-40 transition-opacity duration-300" />
+        <div className="grid md:grid-cols-2 gap-8 lg:gap-12">
+          {projects && projects.length > 0 ? (
+            projects.map((project, idx) => {
+              const projectImage = project.image && project.image.trim() !== "" ? project.image : "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800";
+              const projectLink = project.github_link && project.github_link !== '#' && project.github_link.trim() !== "" 
+                ? (project.github_link.startsWith('http') ? project.github_link : `https://${project.github_link}`) 
+                : null;
 
-                {/* Overlay Links */}
-                <div className="absolute inset-0 flex items-center justify-center gap-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-black/40 backdrop-blur-[2px]">
-                  {safeHref ? (
-                    <motion.a
-                      whileHover={{ scale: 1.1 }}
-                      whileTap={{ scale: 0.9 }}
-                      href={safeHref}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="p-4 rounded-full glass hover:bg-primary hover:text-primary-foreground text-white transition-all shadow-lg"
+              return (
+                <div
+                  key={project.id || idx}
+                  className="group relative rounded-2xl overflow-hidden hover:shadow-2xl hover:shadow-primary/20 hover:border-primary/40 transition-all duration-300 flex flex-col h-full bg-card/40 border border-white/5"
+                >
+                  <div className="relative overflow-hidden aspect-video border-b border-white/5 w-full h-full custom-image-container">
+                    <img
+                      src={projectImage}
+                      alt={project.title || 'Project'}
+                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                      onError={(e) => { e.currentTarget.src = 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800' }}
+                    />
+                    
+                    <div 
+                      className="absolute inset-0 bg-black/60 flex items-center justify-center backdrop-blur-[2px] transition-all duration-300 custom-overlay"
+                      style={{ 
+                        opacity: 0.3,
+                        zIndex: 999,
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0
+                      }}
                     >
-                      <Github className="w-6 h-6" />
-                    </motion.a>
-                  ) : (
-                    <div className="p-4 rounded-full glass text-white/50" title="No GitHub link provided">
-                      <Github className="w-6 h-6" />
+                      {projectLink && (
+                        <a
+                          href={projectLink}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="shadow-2xl flex items-center justify-center transition-all duration-200 hover:scale-110"
+                          style={{ 
+                            width: '56px', 
+                            height: '56px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            backgroundColor: '#ffffff',
+                            color: '#000000',
+                            borderRadius: '50%',
+                            border: '1px solid rgba(255, 255, 255, 0.2)'
+                          }}
+                          title="View on GitHub"
+                        >
+                          <svg 
+                            width="26" 
+                            height="26" 
+                            viewBox="0 0 24 24" 
+                            fill="none" 
+                            stroke="currentColor" 
+                            strokeWidth="2.5" 
+                            strokeLinecap="round" 
+                            strokeLinejoin="round"
+                          >
+                            <path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4" />
+                            <path d="M9 18c-4.51 2-5-2-7-2" />
+                          </svg>
+                        </a>
+                      )}
                     </div>
-                  )}
-                </div>
-              </div>
+                  </div>
 
-              {/* Content */}
-              <div className="p-8 flex flex-col flex-grow space-y-4">
-                <div className="flex items-start justify-between gap-4">
-                  <h3 className="text-2xl font-bold group-hover:text-primary transition-colors text-foreground leading-tight">
-                    {project.title}
-                  </h3>
-                  <ArrowUpRight className="w-6 h-6 flex-shrink-0 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 group-hover:-translate-y-1 transition-all" />
-                </div>
+                  <div className="p-8 flex flex-col flex-grow space-y-4 relative z-10">
+                    <div className="flex items-start justify-between gap-4">
+                      <h3 className="text-2xl font-bold group-hover:text-primary transition-colors text-foreground leading-tight">
+                        {project.title || 'Untitled Project'}
+                      </h3>
+                      <ArrowUpRight className="w-6 h-6 flex-shrink-0 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 group-hover:-translate-y-1 transition-all" />
+                    </div>
 
-                <div className="flex-grow space-y-3">
-                  {renderProjectDescription(project.description)}
-                </div>
+                    <div className="flex-grow space-y-3">
+                      {renderProjectDescription(project.description || '')}
+                    </div>
 
-                <div className="flex flex-wrap gap-2 pt-4 border-t border-border/40">
-                  {(project.tag || []).map((tag, tagIdx) => (
-                    <span
-                      key={`${project.id}-tag-${tagIdx}`}
-                      className="px-3.5 py-1.5 rounded-full bg-primary/10 text-xs font-semibold text-primary/80 group-hover:text-primary border border-primary/20 transition-colors"
-                    >
-                      {tag}
-                    </span>
-                  ))}
+                    <div className="flex flex-wrap gap-2 pt-4 border-t border-border/40">
+                      {project.tags?.map((tag, tagIdx) => (
+                        <span
+                          key={`${project.id || idx}-tag-${tagIdx}`}
+                          className="px-3.5 py-1.5 rounded-full bg-primary/10 text-xs font-semibold text-primary/80 group-hover:text-primary border border-primary/20 transition-colors"
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </motion.div>
-          )
-          })}
-        </motion.div>
+              )
+            })
+          ) : (
+            <div className="col-span-full text-center py-12">
+              <p className="text-muted-foreground">No projects available yet.</p>
+            </div>
+          )}
+        </div>
 
-        {/* View All CTA */}
+        <style>{`
+          .custom-image-container .custom-overlay {
+            opacity: 0.15 !important;
+            background-color: rgba(0, 0, 0, 0.3) !important;
+          }
+          .custom-image-container:hover .custom-overlay {
+            opacity: 1 !important;
+            background-color: rgba(0, 0, 0, 0.7) !important;
+          }
+        `}</style>
+
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}

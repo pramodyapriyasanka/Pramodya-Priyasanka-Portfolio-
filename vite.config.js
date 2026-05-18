@@ -6,7 +6,7 @@ import path from 'path'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react(), tailwindcss()],
-  base: '/Pramodya-PriyasankaPortfolio/', 
+  base: process.env.NODE_ENV === "production" ? '/Pramodya-PriyasankaPortfolio/' : '/',
   resolve: {
     alias: {
       '@': path.resolve(__dirname, "./src"),

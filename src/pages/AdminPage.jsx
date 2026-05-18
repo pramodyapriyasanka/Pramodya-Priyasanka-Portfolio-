@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react"
 import { addPortfolioDataItem, loadPortfolioData, savePortfolioData } from "@/utils/portfolioStorage"
+import { supabase } from "@/supabaseClient"
 
 const formDefaults = {
   section: "project",
@@ -14,7 +15,6 @@ const formDefaults = {
   date: "",
   degree: "",
   year: "",
-  school: "",
 }
 
 const sectionOptions = [
@@ -50,22 +50,46 @@ const AdminPage = () => {
     }
   }
 
-  useEffect(() => {
+  const loadSupabaseData = async () => {
+    const { data: projectsData, error: projectsError } = await supabase
+      .from("projects")
+      .select("*")
+      .order("created_at", { ascending: false })
+
+    const { data: certificationsData, error: certificationsError } = await supabase
+      .from("certifications")
+      .select("*")
+      .order("created_at", { ascending: false })
+
+    const { data: educationData, error: educationError } = await supabase
+      .from("education")
+      .select("*")
+      .order("created_at", { ascending: false })
+
+    if (projectsError) {
+      console.error("Failed to load projects from Supabase:", projectsError)
+    }
+    if (certificationsError) {
+      console.error("Failed to load certifications from Supabase:", certificationsError)
+    }
+    if (educationError) {
+      console.error("Failed to load education from Supabase:", educationError)
+    }
+
     setData({
-      projects: loadPortfolioData("portfolio_projects", []),
+      projects: Array.isArray(projectsData) ? projectsData : [],
       skills: loadPortfolioData("portfolio_skills", []),
-      certifications: loadPortfolioData("portfolio_certifications", []),
-      educations: loadPortfolioData("portfolio_educations", []),
+      certifications: Array.isArray(certificationsData) ? certificationsData : [],
+      educations: Array.isArray(educationData) ? educationData : [],
     })
+  }
+
+  useEffect(() => {
+    loadSupabaseData()
   }, [])
 
   const refreshData = () => {
-    setData({
-      projects: loadPortfolioData("portfolio_projects", []),
-      skills: loadPortfolioData("portfolio_skills", []),
-      certifications: loadPortfolioData("portfolio_certifications", []),
-      educations: loadPortfolioData("portfolio_educations", []),
-    })
+    loadSupabaseData()
   }
 
   const notifyPortfolioUpdate = () => {
@@ -86,19 +110,62 @@ const AdminPage = () => {
       description: item.description || "",
       github: item.github || "",
       image: item.image || "",
-      tags: item.tag ? item.tag.join(", ") : item.items ? item.items.join(", ") : "",
+      tags: Array.isArray(item.tags)
+        ? item.tags.join(", ")
+        : typeof item.tags === "string"
+          ? item.tags
+          : item.tag
+            ? item.tag.join(", ")
+            : item.items
+              ? item.items.join(", ")
+              : "",
       category: item.category || "",
       type: item.type || "",
       institution: item.institution || "",
       date: item.date || "",
       degree: item.degree || "",
       year: item.year || "",
-      school: item.school || "",
     })
     setActiveTab("add")
   }
 
-  const handleDelete = (section, itemId) => {
+  const handleDelete = async (section, itemId) => {
+    if (section === "project") {
+      const { error } = await supabase.from("projects").delete().eq("id", itemId)
+      if (error) {
+        console.error("Failed to delete project from Supabase:", error)
+        setStatus("Failed to delete project.")
+        return
+      }
+      await loadSupabaseData()
+      setStatus("Project deleted successfully.")
+      return
+    }
+
+    if (section === "certification") {
+      const { error } = await supabase.from("certifications").delete().eq("id", itemId)
+      if (error) {
+        console.error("Failed to delete certification from Supabase:", error)
+        setStatus("Failed to delete certification.")
+        return
+      }
+      await loadSupabaseData()
+      setStatus("Certification deleted successfully.")
+      return
+    }
+
+    if (section === "education") {
+      const { error } = await supabase.from("education").delete().eq("id", itemId)
+      if (error) {
+        console.error("Failed to delete education from Supabase:", error)
+        setStatus("Failed to delete education.")
+        return
+      }
+      await loadSupabaseData()
+      setStatus("Education deleted successfully.")
+      return
+    }
+
     const key = `portfolio_${section}s`
     const current = loadPortfolioData(key, [])
     let filtered
@@ -112,11 +179,79 @@ const AdminPage = () => {
     setStatus("Item deleted successfully.")
   }
 
-  const handleUpdate = (event) => {
+  const handleUpdate = async (event) => {
     event.preventDefault()
     if (!editingItem) return
 
     const { section, item } = editingItem
+
+    if (section === "project") {
+      const tagsArray = form.tags.split(",").map((tag) => tag.trim()).filter(Boolean)
+      const payload = {
+        title: form.title || item.title,
+        description: form.description || item.description,
+        image: form.image || item.image,
+        tags: tagsArray,
+      }
+
+      const { error } = await supabase.from("projects").update(payload).eq("id", item.id)
+      if (error) {
+        console.error("Failed to update project in Supabase:", error)
+        setStatus("Failed to update project.")
+        return
+      }
+
+      await loadSupabaseData()
+      setStatus("Project updated successfully.")
+      setEditingItem(null)
+      setForm(formDefaults)
+      return
+    }
+
+    if (section === "certification") {
+      const payload = {
+        title: form.title || item.title,
+        issuer: form.institution || item.issuer || item.institution,
+        date: form.date || item.date,
+        image: form.image || item.image,
+      }
+
+      const { error } = await supabase.from("certifications").update(payload).eq("id", item.id)
+      if (error) {
+        console.error("Failed to update certification in Supabase:", error)
+        setStatus("Failed to update certification.")
+        return
+      }
+
+      await loadSupabaseData()
+      setStatus("Certification updated successfully.")
+      setEditingItem(null)
+      setForm(formDefaults)
+      return
+    }
+
+    if (section === "education") {
+      const payload = {
+        title: form.degree || item.title || item.degree,
+        institution: form.institution || item.institution,
+        description: form.description || item.description,
+        year: form.year || item.year,
+      }
+
+      const { error } = await supabase.from("education").update(payload).eq("id", item.id)
+      if (error) {
+        console.error("Failed to update education in Supabase:", error)
+        setStatus("Failed to update education.")
+        return
+      }
+
+      await loadSupabaseData()
+      setStatus("Education updated successfully.")
+      setEditingItem(null)
+      setForm(formDefaults)
+      return
+    }
+
     const key = `portfolio_${section}s`
     const current = loadPortfolioData(key, [])
     let updated
@@ -147,7 +282,6 @@ const AdminPage = () => {
             date: form.date || existing.date,
             degree: form.degree || existing.degree,
             year: form.year || existing.year,
-            school: form.school || existing.school,
           }
         }
         return existing
@@ -160,33 +294,32 @@ const AdminPage = () => {
     setForm(formDefaults)
   }
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault()
     if (editingItem) {
-      handleUpdate(event)
+      await handleUpdate(event)
       return
     }
 
     const now = new Date().toISOString()
 
     if (form.section === "project") {
-      const rawGithub = form.github || form.institution || "#"
-      const normalizedGithub = rawGithub && rawGithub !== "#"
-        ? rawGithub.startsWith("http")
-          ? rawGithub
-          : `https://${rawGithub}`
-        : "#"
-      const project = {
-        id: `project-${now}`,
+      const tagsArray = form.tags.split(",").map((tag) => tag.trim()).filter(Boolean)
+      const projectPayload = {
         title: form.title || "New Project",
         description: form.description || "Project description will appear here.",
-        github: normalizedGithub,
+        tags: tagsArray,
         image: form.image || "https://via.placeholder.com/900x560?text=Project+Image",
-        tag: form.tags.split(",").map((tag) => tag.trim()).filter(Boolean),
       }
-      console.log("[Admin] Adding project:", project)
-      addPortfolioDataItem("portfolio_projects", project)
-      setStatus("Project added successfully.")
+
+      const { error } = await supabase.from("projects").insert([projectPayload])
+      if (error) {
+        console.error("Failed to add project to Supabase:", error)
+        setStatus("Failed to add project.")
+      } else {
+        await loadSupabaseData()
+        setStatus("Project added successfully.")
+      }
     }
 
     if (form.section === "skill") {
@@ -199,30 +332,37 @@ const AdminPage = () => {
     }
 
     if (form.section === "certification") {
-      const certification = {
-        id: `cert-${now}`,
+      const certificationPayload = {
         title: form.title || "Certification Title",
-        institution: form.institution || "Institution Name",
-        type: form.type || "Certification",
+        issuer: form.institution || "Institution Name",
         date: form.date || "Year",
-        description: form.description || "Certification description.",
         image: form.image || "https://via.placeholder.com/800x500?text=Certification+Image",
       }
-      addPortfolioDataItem("portfolio_certifications", certification)
-      setStatus("Certification added successfully.")
+      const { error } = await supabase.from("certifications").insert([certificationPayload])
+      if (error) {
+        console.error("Failed to add certification to Supabase:", error)
+        setStatus("Failed to add certification.")
+      } else {
+        await loadSupabaseData()
+        setStatus("Certification added successfully.")
+      }
     }
 
     if (form.section === "education") {
-      const education = {
-        id: `edu-${now}`,
-        degree: form.degree || "Degree Title",
+      const educationPayload = {
+        title: form.degree || "Degree Title",
         institution: form.institution || "Institution Name",
-        year: form.year || "Graduation Year",
         description: form.description || "Education description.",
-        school: form.school || "University / College",
+        year: form.year || "Graduation Year",
       }
-      addPortfolioDataItem("portfolio_educations", education)
-      setStatus("Education item added successfully.")
+      const { error } = await supabase.from("education").insert([educationPayload])
+      if (error) {
+        console.error("Failed to add education to Supabase:", error)
+        setStatus("Failed to add education.")
+      } else {
+        await loadSupabaseData()
+        setStatus("Education item added successfully.")
+      }
     }
 
     notifyPortfolioUpdate()
@@ -517,7 +657,7 @@ const AdminPage = () => {
                 {data.educations.map((edu) => (
                   <div key={edu.id} className="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/10">
                     <div className="flex-1">
-                      <h4 className="font-medium text-white">{edu.degree}</h4>
+                      <h4 className="font-medium text-white">{edu.title || edu.degree}</h4>
                       <p className="text-sm text-muted-foreground">{edu.institution} - {edu.year}</p>
                     </div>
                     <div className="flex gap-2">

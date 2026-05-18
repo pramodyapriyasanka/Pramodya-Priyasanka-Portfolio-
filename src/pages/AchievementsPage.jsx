@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from "react"
-import { loadPortfolioData } from "@/utils/portfolioStorage"
+import { supabase } from "@/supabaseClient"
 
 const AchievementsPage = () => {
   const [certifications, setCertifications] = useState([])
@@ -8,19 +8,45 @@ const AchievementsPage = () => {
   const sectionRef = useRef(null)
 
   useEffect(() => {
-    const loadAchievements = () => {
-      const savedCertifications = loadPortfolioData("portfolio_certifications", [])
-      const savedEducation = loadPortfolioData("portfolio_educations", [])
-      setCertifications(savedCertifications)
-      setEducation(savedEducation)
-    }
-    loadAchievements()
-    window.addEventListener("portfolio-data-changed", loadAchievements)
+    const loadAchievements = async () => {
+      try {
+        const { data: certData, error: certError } = await supabase
+          .from("certifications")
+          .select("*")
+          .order("created_at", { ascending: false })
 
-    // Trigger mount animation
+        if (certError) {
+          console.error("Failed to load certifications from Supabase:", certError)
+        } else {
+          setCertifications(Array.isArray(certData) ? certData : [])
+        }
+
+        const { data: eduData, error: eduError } = await supabase
+          .from("education")
+          .select("*")
+          .order("created_at", { ascending: false })
+
+        if (eduError) {
+          console.error("Failed to load education from Supabase:", eduError)
+        } else {
+          setEducation(Array.isArray(eduData) ? eduData : [])
+        }
+      } catch (err) {
+        console.error("Error loading achievements:", err)
+      }
+    }
+
+    loadAchievements()
+
+    const handleDataChange = () => {
+      loadAchievements()
+    }
+
+    window.addEventListener("portfolio-data-changed", handleDataChange)
+
     const t = requestAnimationFrame(() => setMounted(true))
     return () => {
-      window.removeEventListener("portfolio-data-changed", loadAchievements)
+      window.removeEventListener("portfolio-data-changed", handleDataChange)
       cancelAnimationFrame(t)
     }
   }, [])
@@ -340,13 +366,13 @@ const AchievementsPage = () => {
                         <h3 className="text-xl font-semibold text-white group-hover:text-[#20C997] transition-colors duration-300 leading-snug">
                           {cert.title}
                         </h3>
-                        <p className="mt-2 text-sm text-slate-400 tracking-wide">{cert.institution}</p>
+                        <p className="mt-2 text-sm text-slate-400 tracking-wide">{cert.issuer || cert.institution}</p>
                       </div>
                       <span
                         className="ach-badge-pulse shrink-0 rounded-full bg-[#20C997]/10 border border-[#20C997]/25
                                    px-3.5 py-1.5 text-[10px] font-bold uppercase tracking-[0.22em] text-[#20C997]"
                       >
-                        {cert.type}
+                        {cert.type || "Certification"}
                       </span>
                     </div>
 

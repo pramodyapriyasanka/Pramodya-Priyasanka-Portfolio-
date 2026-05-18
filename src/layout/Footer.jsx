@@ -85,9 +85,9 @@ export const Footer = () => {
                 { id: "svc-web", label: "AI & Machine Learning Solutions" },
                 { id: "svc-mobile", label: "Mobile Development" },
                 { id: "svc-uiux", label: "UI/UX Design" },
-                { id: "svc-consult", label: "Automation & Workflow Optimization" },
-                { id: "svc-consult", label: "Data Analytics & Visualization" },
-                { id: "svc-consult", label: "Consulting" },
+                { id: "svc-consult-workflow", label: "Automation & Workflow Optimization" },
+                { id: "svc-consult-data", label: "Data Analytics & Visualization" },
+                { id: "svc-consulting", label: "Consulting" },
                 { id: "svc-ai", label: "GenAI & LLM Integration " },
               ].map((service, idx) => (
                 <li key={service.id}>
